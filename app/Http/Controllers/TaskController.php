@@ -1,0 +1,81 @@
+<?php
+
+namespace App\Http\Controllers;
+use App\Http\Requests\StoreTaskRequest;
+use App\Models\Task;
+use Illuminate\Http\Request;
+
+class TaskController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        $tasks = auth()->user()->tasks()->get();
+        return inertia('Tasks/Tasks', [
+            'tasks' => $tasks,
+        ]);
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        //
+
+        return inertia('Tasks/Create');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(StoreTaskRequest $request)
+    {
+        $task = auth()->user()->tasks()->create($request->validated());
+        return redirect()->route('tasks.index')->with('success', 'Task created successfully.');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(int $id)
+    {
+        $task = auth()->user()->tasks()->findOrFail($id);
+        return inertia('Tasks/Show', [
+            'task' => $task,
+        ]);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(int $id)
+    {
+        $task = auth()->user()->tasks()->findOrFail($id);
+        return inertia('Tasks/Create', [
+            'task' => $task,
+        ]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(StoreTaskRequest $request, int $id)
+    {
+        $task = auth()->user()->tasks()->findOrFail($id);
+        $task->update($request->validated());
+        return redirect()->route('tasks.index')->with('success', 'Task updated successfully.');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        $task = auth()->user()->tasks()->findOrFail($id);
+        $task->delete();
+        return redirect()->route('tasks.index')->with('success', 'Task deleted successfully.');
+    }
+}
