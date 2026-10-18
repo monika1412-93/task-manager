@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Illuminate\Support\Facades\Route;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -38,6 +39,33 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
+            'pageTitle' => $this->getPageTitle(),
         ];
+    }
+
+    protected function getPageTitle(): string
+    {
+        $routeName = Route::currentRouteName();
+
+        // 1. Static Route Names Mapping
+        $titles = [
+            'dashboard'    => 'Dashboard',
+            'profile.edit'=> 'Account Settings',
+            'tasks.index'  => 'Manage Tasks',
+            'tasks.create' => 'Create Task',
+            'tasks.show'   => 'Task Details',
+            'tasks.edit'   => 'Edit Task',
+        ];
+
+        if (isset($titles[$routeName])) {
+            return $titles[$routeName];
+        }
+
+        // 2. Fallback: Automatically prettify route names (e.g., "about-us" -> "About Us")
+        if ($routeName) {
+            return ucwords(str_replace(['.', '-', '_'], ' ', $routeName));
+        }
+
+        return '';
     }
 }
