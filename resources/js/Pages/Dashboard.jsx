@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
-import {  Card, CardContent,  CardDescription, CardHeader,  CardTitle} from "@/components/ui/card"
+import {  Card, CardContent,  CardDescription, CardHeader,  CardTitle} from "@/Components/ui/card"
 export default function Dashboard({ auth }) {
     return (
         <AuthenticatedLayout

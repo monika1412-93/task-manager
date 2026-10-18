@@ -1,9 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Link } from '@inertiajs/react';
-import { Button   } from "@/components/ui/button";
+import { Button   } from "@/Components/ui/button";
 import { IconFolderCode } from "@tabler/icons-react"
 import { ArrowUpRightIcon } from "lucide-react"
-import { Table, TableHeader,TableBody,TableRow, TableCell,TableHead  } from "@/components/ui/table"
+import { Table, TableHeader,TableBody,TableRow, TableCell,TableHead  } from "@/Components/ui/table"
 import { createColumnHelper } from "@tanstack/react-table"
 import { useTable } from "@tanstack/react-table"
 import { features } from "./data-table-features"
@@ -17,7 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/Components/ui/alert-dialog"
+import DeleteForm from '@/Components/DeleteForm';
 
 import {
   Empty,
@@ -26,7 +27,7 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty"
+} from "@/Components/ui/empty"
 
 
 const Tasks = ({ auth, header, tasks }) => {
@@ -43,20 +44,29 @@ const Tasks = ({ auth, header, tasks }) => {
         }),
         columnHelper.accessor("due_date", {
             header: "Due Date",
+            cell: (info) => info.getValue() ? new Date(info.getValue()).toLocaleDateString("en-US",{
+                year: "numeric",
+                month: "long",
+                day: "numeric",}) : "N/A",
         }),
         columnHelper.accessor("created_at", {
             header: "Created At",
+            cell: (info) => new Date(info.getValue()).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+            }),
         }),
         columnHelper.accessor("actions", {
             header: "Actions",
             cell: (info) => (
-                <div className="flex gap-2">
-                    <Button variant="outline" size="sm" render={<a href={`/tasks/${info.row.original.id}`}>View</a>} />        
-                    <Button variant="outline" size="sm" render={<a href={`/tasks/${info.row.original.id}/edit`}>Edit</a>} />        
+                <div className="flex gap-2 ">
+                    <Button variant="outline" size="sm" render={<Link href={`/tasks/${info.row.original.id}`}>View</Link>} />        
+                    <Button variant="outline" size="sm" render={<Link href={`/tasks/${info.row.original.id}/edit`}>Edit</Link>} />        
                     <AlertDialog>
                         <AlertDialogTrigger render={<Button variant="destructive" size="sm">Delete</Button>}>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg text-gray-900 dark:text-gray-100">
                             <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
@@ -64,11 +74,15 @@ const Tasks = ({ auth, header, tasks }) => {
                             </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction >
-                                <Link href={`/tasks/${info.row.original.id}/delete`} method="delete" as="button" className="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800">
-                                Continue
-                                </Link>
+                            <AlertDialogCancel className="bg-gray-200 hover:bg-gray-300 text-gray-800 hover:text-gray-900 border border-gray-300 py-2 px-4 rounded focus:ring-blue-500">
+                                Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction render={<DeleteForm routeName="tasks.destroy" routeParams={{ id: info.row.original.id }} handleSuccess={() => {}} handleError={() => {}}  className="space-y-6">
+                                <button type="submit"  className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                                    Delete
+                                </button>
+                            </DeleteForm>}>
+                                
                             </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
@@ -84,6 +98,21 @@ const Tasks = ({ auth, header, tasks }) => {
         columns,
     })
 
+    const handleDeleteTask = (taskId) => {
+        fetch(`/tasks/${taskId}`, {
+            method: 'DELETE',
+        })
+        .then(response => {
+            if (response.ok) {
+                // Remove the task from the UI
+                setTasks(tasks.filter(task => task.id !== taskId));
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting task:', error);
+        });
+
+    }
 
     return (
         <AuthenticatedLayout
@@ -91,12 +120,12 @@ const Tasks = ({ auth, header, tasks }) => {
             header={header}
         >
            
-            <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 overflow-hidden ">
                 {tasks.length > 0 ? (
-                    <div className="flex content-between justify-between content-between mt-10 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                    <div className="flex  content-between justify-between content-between mt-10 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900 dark:text-gray-100">Manage Tasks</div>
                         <div className="p-6 text-gray-900 dark:text-gray-100">
-                            <Button className="rounded" variant="outline" size="sm" render={<a href="/tasks/create">+ Add Task</a>} />
+                            <Button className="rounded" variant="outline" size="sm" render={<Link href="/tasks/create">+ Add Task</Link>} />
                         </div>
                     </div> )
                     : (
@@ -121,31 +150,41 @@ const Tasks = ({ auth, header, tasks }) => {
                 }
 
                 {tasks.length > 0 && (
-                    <div className="mt-6 p-2 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg text-gray-900 dark:text-gray-100">
-                        <Table>
-                            <TableHeader className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" >
-                                {columns.map((column) => (
-                                    <TableHead key={column.id}>
-                                        {column.header}
-                                    </TableHead>
-                                ))}
-                            </TableHeader>
-                            <TableBody>
-                                {table.getRowModel().rows.map((row) => (
-                                    <TableRow
-                                        key={row.id}
-                                        data-state={row.getIsSelected() && "selected"}
-                                    >
-                                        {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
-                                            <table.FlexRender cell={cell} />
-                                        </TableCell>
-                                        ))}
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
+                    <>
+                        <div className="mt-6 mb-3 overflow-hidden p-2 bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg text-gray-900 dark:text-gray-100">
+                            <Table>
+                                <TableHeader className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" >
+                                    {columns.map((column) => (
+                                        <TableHead key={column.id}>
+                                            {column.header}
+                                        </TableHead>
+                                    ))}
+                                </TableHeader>
+                                <TableBody>
+                                    {table.getRowModel().rows.map((row) => (
+                                        <TableRow
+                                            key={row.id}
+                                            data-state={row.getIsSelected() && "selected"}
+                                        >
+                                            {row.getVisibleCells().map((cell) => (
+                                            <TableCell key={cell.id}>
+                                                <table.FlexRender cell={cell} />
+                                            </TableCell>
+                                            ))}
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                        <div className="flex items-center justify-end space-x-2 py-4 text-gray-900 dark:text-gray-100">
+                            <Button variant="outline"  size="sm" onClick={() => table.previousPage()}  disabled={!table.getCanPreviousPage()}  >
+                                Previous
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} >
+                                Next
+                            </Button>
+                        </div>
+                    </>
                 )}
             </div>
         </AuthenticatedLayout>

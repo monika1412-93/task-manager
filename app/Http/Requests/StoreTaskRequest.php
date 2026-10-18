@@ -39,7 +39,7 @@ class StoreTaskRequest extends FormRequest
             'due_date' => [
                 'nullable',
                 'date',
-                'after_or_equal:today',
+                $this->isMethod('POST') ? 'after_or_equal:today' : 'sometimes',
             ],
         ];
     }

@@ -4,19 +4,19 @@ import { format } from "date-fns"
 
 import {
   Field, FieldDescription, FieldGroup, FieldLabel, FieldSet, FieldLegend
-} from "@/components/ui/field"
+} from "@/Components/ui/field"
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Card, CardContent} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
+import { Card, CardContent} from "@/Components/ui/card"
+import { Button } from "@/Components/ui/button"
+import { Input } from "@/Components/ui/input"
+import { Textarea } from "@/Components/ui/textarea"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue} from "@/Components/ui/select"
+import { Calendar } from "@/Components/ui/calendar"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/Components/ui/popover"
 
 
 export default function Create({ auth, header, task }) {
@@ -33,7 +33,7 @@ export default function Create({ auth, header, task }) {
             title: task.title || '',    
             description: task.description || '',
             status: task.status || 'pending',
-            due_date: task.due_date || '',
+            due_date: task?.due_date ? task.due_date.slice(0, 10) : '',
         };
     }
 
@@ -47,7 +47,7 @@ export default function Create({ auth, header, task }) {
         { value: 'completed', label: 'Completed' },
     ];
 
-    const [date, setDate] = useState(new Date());
+    const [date, setDate] = useState(task?.due_date ? new Date(task.due_date.slice(0, 10) + 'T00:00:00') : undefined);
 
     const validateForm = () => {
         const newErrors = {};
@@ -68,7 +68,7 @@ export default function Create({ auth, header, task }) {
         if (data.due_date && Number.isNaN(Date.parse(data.due_date))) {
             newErrors.due_date = "Please enter a valid due date.";
         }
-        else if (data.due_date && new Date(data.due_date) < new Date()) {
+        else if (data.due_date && new Date(data.due_date) < new Date()  && !task) {
             newErrors.due_date = "Due date cannot be in the past.";
         }
         console.log("Client-side validation errors:", newErrors);
@@ -126,13 +126,13 @@ export default function Create({ auth, header, task }) {
                                     </FieldDescription>
                                     <Field>
                                         <FieldLabel htmlFor="title">Title</FieldLabel>
-                                        <Input id="title" type="text" max={255} value={data.title} placeholder="Title" onChange={(e) => setData('title', e.target.value)} />
+                                        <Input id="title" type="text" maxLength={255} value={data.title} placeholder="Title" onChange={(e) => setData('title', e.target.value)} />
                                         {clientErrors.title && <p className="text-red-500 text-sm mt-1">{clientErrors.title}</p>}
                                     </Field>
                                     <Field>
                                         <FieldLabel htmlFor="description">Description</FieldLabel>
                                         <FieldDescription>Enter task description below.</FieldDescription>
-                                        <Textarea id="description" max={5000} placeholder="Type your message here." value={data.description} onChange={(e) => setData('description', e.target.value)} />
+                                        <Textarea id="description" maxLength={5000} placeholder="Type your message here." value={data.description} onChange={(e) => setData('description', e.target.value)} />
                                         {clientErrors.description && <p className="text-red-500 text-sm mt-1">{clientErrors.description}</p>}
                                     </Field>
                                     <Field>
@@ -179,7 +179,7 @@ export default function Create({ auth, header, task }) {
                                 </FieldSet>
                                 <Field orientation="horizontal">
                                     <Button variant="outline" type="submit">Submit</Button>
-                                    <Button  type="button" onClick={() => reset()} className="ml-2">
+                                    <Button  type="button" onClick={() => {reset(); setClientErrors({}); setDate(undefined); }} className="ml-2">
                                         Reset
                                     </Button>
                                 </Field>
