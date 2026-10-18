@@ -1,12 +1,14 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Link } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 import { Button   } from "@/Components/ui/button";
-import { IconFolderCode } from "@tabler/icons-react"
+import { Input } from "@/Components/ui/input";
+import { IconFolderCode, IconCircleCheck , IconPlaystationX   } from "@tabler/icons-react"
 import { ArrowUpRightIcon } from "lucide-react"
 import { Table, TableHeader,TableBody,TableRow, TableCell,TableHead  } from "@/Components/ui/table"
 import { createColumnHelper } from "@tanstack/react-table"
 import { useTable } from "@tanstack/react-table"
 import { features } from "./data-table-features"
+import {useState, useEffect} from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,9 +32,30 @@ import {
 } from "@/Components/ui/empty"
 
 
-const Tasks = ({ auth, header, tasks }) => {
-
+const Tasks = ({ auth, header, tasks, flash, query }) => {
     const columnHelper = createColumnHelper();
+    const [successMessage, setSuccessMessage] = useState(flash.success || '');
+    const [errorMessage, setErrorMessage] = useState(flash.error || '');
+    const [allTasks, setAllTasks] = useState(tasks?.data || []);
+    const { data, setData, get, processing, errors  } = useForm({query: query || ''});
+
+
+    useEffect(() => {
+        if (flash.success) {
+            setSuccessMessage(flash.success);
+
+            setTimeout(() => {
+                setSuccessMessage('');
+            }, 5000);
+        }
+        if (flash.error) {
+            setErrorMessage(flash.error);
+            setTimeout(() => {
+                setErrorMessage('');
+            }, 5000);
+        }
+
+    }, [flash.success, flash.error]);
 
     const columns = columnHelper.columns([
         
@@ -41,6 +64,34 @@ const Tasks = ({ auth, header, tasks }) => {
         }),
         columnHelper.accessor("status", {
             header: "Status",
+            cell: (info) => {
+                const status = info.getValue();
+                let statusClass = "";
+                let statusText = "";
+
+                switch (status) {
+                    case "pending":
+                        statusClass = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+                        statusText = "Pending";
+                        break;
+                    case "in_progress":
+                        statusClass = "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+                        statusText = "In Progress";
+                        break;
+                    case "completed":
+                        statusClass = "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+                        statusText = "Completed";
+                        break;
+                    default:
+                        statusClass = "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+                        statusText = "Unknown";
+                }
+                return (
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}`}>
+                        {statusText}
+                    </span>
+                );
+            }
         }),
         columnHelper.accessor("due_date", {
             header: "Due Date",
@@ -61,10 +112,10 @@ const Tasks = ({ auth, header, tasks }) => {
             header: "Actions",
             cell: (info) => (
                 <div className="flex gap-2 ">
-                    <Button variant="outline" size="sm" render={<Link href={`/tasks/${info.row.original.id}`}>View</Link>} />        
-                    <Button variant="outline" size="sm" render={<Link href={`/tasks/${info.row.original.id}/edit`}>Edit</Link>} />        
+                    <Button className="inline-flex items-center px-4 py-2 bg-blue-700 hover:bg-blue-800 border border-transparent rounded-md font-semibold text-xs text-white dark:text-white-800 uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-blue-900 focus:bg-blue-700 dark:hover:text-white   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-blue-800 transition ease-in-out duration-150" variant="outline" size="sm" render={<Link href={`/tasks/${info.row.original.id}`}>View</Link>} />        
+                    <Button className="inline-flex items-center px-4 py-2 bg-purple-700 hover:bg-purple-800 border border-transparent rounded-md font-semibold text-xs text-white dark:text-white-800 uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-purple-900 focus:bg-purple-700 dark:hover:text-white   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-purple-800 transition ease-in-out duration-150" variant="outline" size="sm" render={<Link href={`/tasks/${info.row.original.id}/edit`}>Edit</Link>} />        
                     <AlertDialog>
-                        <AlertDialogTrigger render={<Button variant="destructive" size="sm">Delete</Button>}>
+                        <AlertDialogTrigger render={<Button variant="destructive" size="sm" className="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Delete</Button>}>
                         </AlertDialogTrigger>
                         <AlertDialogContent className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg text-gray-900 dark:text-gray-100">
                             <AlertDialogHeader>
@@ -88,11 +139,19 @@ const Tasks = ({ auth, header, tasks }) => {
             ),
         }),       
     ])
+    const [sorting, setSorting] = useState([]);
+    const [columnFilters, setColumnFilters] = useState([]);
 
     const table = useTable({
         features,
-        data: tasks,
+        data: allTasks,
         columns,
+        onSortingChange: setSorting,
+        onColumnFiltersChange: setColumnFilters,
+        state: {
+            sorting,
+            columnFilters,
+        },
     })
 
     const handleDeleteTask = (taskId) => {
@@ -111,6 +170,16 @@ const Tasks = ({ auth, header, tasks }) => {
 
     }
 
+    const submit = (e) => {
+        e.preventDefault();
+        get(route('tasks.index', { 
+            onSuccess: (page) => {
+                console.log(page)
+                setAllTasks(page.props.tasks.data);
+            }
+         }));
+    }
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -118,11 +187,11 @@ const Tasks = ({ auth, header, tasks }) => {
         >
            
             <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 overflow-hidden ">
-                {tasks.length > 0 ? (
+                {allTasks.length > 0 || data?.query ? (
                     <div className="flex  content-between justify-between content-between mt-10 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900 dark:text-gray-100">Manage Tasks</div>
                         <div className="p-6 text-gray-900 dark:text-gray-100">
-                            <Button className="rounded" variant="outline" size="sm" render={<Link href="/tasks/create">+ Add Task</Link>} />
+                            <Button className="rounded text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 uppercase border-transparent"  variant="outline" size="sm" render={<Link href="/tasks/create">+ Add Task</Link>} />
                         </div>
                     </div> )
                     : (
@@ -146,8 +215,39 @@ const Tasks = ({ auth, header, tasks }) => {
                         </Empty> )
                 }
 
-                {tasks.length > 0 && (
+                { successMessage && (
+                    <div transition="linear" timing="ease-in-out" duration="5000" className="mt-5 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                        <strong className="font-bold">Success! </strong>
+                        <span className="block sm:inline">{successMessage}</span>
+                    </div>
+                )}
+                { errorMessage && (
+                    <div className="mt-5 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                        <strong className="font-bold">Error! </strong>
+                        <span className="block sm:inline">{errorMessage}</span>
+                    </div>
+                )}
+
+                {(allTasks.length > 0 || data?.query) && (
                     <>
+                        <div>
+                            <div className="flex justify-content-end pt-4 w-full max-w-sm">
+                                <form method="GET" onSubmit={submit}  className="flex items-center w-full max-w-sm justify-content-end">
+                                    <Input
+                                        type="text"
+                                        name="query"
+
+                                        placeholder="Filter Tasks..."
+                                        value={data?.query}
+                                        onChange={(e) => setData({...data, query: e.target.value})}
+                                        className="max-w-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm"
+                                    />
+                                    <button type="submit" className="ml-2 inline-flex items-center px-4 py-2 bg-gray-800 dark:bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-white dark:text-gray-800 uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                                        Filter
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                         <div className="mt-6 mb-3 overflow-hidden p-2 bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg text-gray-900 dark:text-gray-100">
                             <Table>
                                 <TableHeader className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" >
@@ -170,16 +270,32 @@ const Tasks = ({ auth, header, tasks }) => {
                                             ))}
                                         </TableRow>
                                     ))}
+                                    {data?.query && allTasks.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={columns.length} className="text-center py-4 text-gray-500 dark:text-gray-400">
+                                                No tasks found.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
                                 </TableBody>
                             </Table>
                         </div>
                         <div className="flex items-center justify-end space-x-2 py-4 text-gray-900 dark:text-gray-100">
-                            <Button variant="outline"  size="sm" onClick={() => table.previousPage()}  disabled={!table.getCanPreviousPage()}  >
-                                Previous
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} >
-                                Next
-                            </Button>
+                            {tasks.prev_page_url ? (
+                                <Button className="border rounded uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 hover:text-gray-900 dark:hover:text-gray  transition ease-in-out duration-150" variant="outline" size="sm" render={<Link href={tasks.prev_page_url + (data?.query ? '&query=' + data.query : '')}>Previous</Link>}   >
+                                </Button>
+                            ) : ( <Button className="border rounded uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 hover:text-gray-900 dark:hover:text-gray  transition ease-in-out duration-150" variant="outline" size="sm" disabled   >
+                                    Previous
+                                </Button>
+                            )}
+
+                            {tasks.next_page_url ? (
+                                    <Button className="border rounded uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 hover:text-gray-900 dark:hover:text-gray  transition ease-in-out duration-150" variant="outline" size="sm" render={<Link href={tasks.next_page_url + (data?.query ? '&query=' + data.query : '')} disabled={!tasks.next_page_url}>Next</Link>} >
+                                    </Button>
+                            ) : ( <Button className="border rounded uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 hover:text-gray-900 dark:hover:text-gray  transition ease-in-out duration-150" variant="outline" size="sm" disabled>
+                                    Next
+                                </Button>
+                            )}
                         </div>
                     </>
                 )}

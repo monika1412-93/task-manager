@@ -10,11 +10,18 @@ class TaskController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $tasks = auth()->user()->tasks()->get();
+    public function index(Request $request)
+    {   
+        $query = $request->input('query');
+        $tasks = auth()->user()->tasks();
+        if(!empty($query)) {
+            $tasks = $tasks->where('title', 'like', "%{$query}%")->orWhere('description', 'like', "%{$query}%")->orWhere('status', 'like', "%{$query}%");
+        }
+        $tasks = $tasks->orderBy('created_at', 'desc')->paginate(10);
+         // dd($tasks);
         return inertia('Tasks/Tasks', [
             'tasks' => $tasks,
+            'query' => $query,
         ]);
     }
 
@@ -23,7 +30,6 @@ class TaskController extends Controller
      */
     public function create()
     {
-        //
 
         return inertia('Tasks/Create');
     }
