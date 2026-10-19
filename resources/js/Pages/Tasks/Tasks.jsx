@@ -194,11 +194,7 @@ const Tasks = ({ auth, header, tasks, flash, query }) => {
 
     const submit = (e) => {
         e.preventDefault();
-        get(route('tasks.index', { 
-            onSuccess: (page) => {
-                setAllTasks(page.props.tasks.data);
-            }
-         }));
+        get(route('tasks.index'));
     }
 
     return (
