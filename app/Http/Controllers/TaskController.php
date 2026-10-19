@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreTaskRequest;
 use App\Models\Task;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TaskController extends Controller
 {
@@ -12,13 +13,13 @@ class TaskController extends Controller
      */
     public function index(Request $request)
     {   
-        $query = $request->input('query');
+        $query = $request->validate(['query' => ['nullable', 'string', 'max:255']])['query'] ?? null;
         $tasks = auth()->user()->tasks();
-        if(!empty($query)) {
+        if($query !== null && $query !== '') {
             $tasks = $tasks->where('title', 'like', "%{$query}%")->orWhere('description', 'like', "%{$query}%")->orWhere('status', 'like', "%{$query}%");
         }
-        $tasks = $tasks->orderBy('created_at', 'desc')->paginate(10);
-         // dd($tasks);
+        $tasks = $tasks->orderBy('created_at', 'desc')->paginate(5)->withQueryString();
+
         return inertia('Tasks/Tasks', [
             'tasks' => $tasks,
             'query' => $query,

@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Link, useForm } from '@inertiajs/react';
+import { Link, useForm, router } from '@inertiajs/react';
 import { Button   } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { IconFolderCode, IconCircleCheck , IconPlaystationX   } from "@tabler/icons-react"
@@ -8,7 +8,7 @@ import { Table, TableHeader,TableBody,TableRow, TableCell,TableHead  } from "@/C
 import { createColumnHelper } from "@tanstack/react-table"
 import { useTable } from "@tanstack/react-table"
 import { features } from "./data-table-features"
-import {useState, useEffect} from "react";
+import {useState, useEffect, useRef } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,29 +38,52 @@ const Tasks = ({ auth, header, tasks, flash, query }) => {
     const [errorMessage, setErrorMessage] = useState(flash.error || '');
     const [allTasks, setAllTasks] = useState(tasks?.data || []);
     const { data, setData, get, processing, errors  } = useForm({query: query || ''});
-
+    const [isFilterActive, setIsFilterActive] = useState(query && query.trim() !== '');
+    
+    const successTimeout = useRef(null);
+    const errorTimeout = useRef(null);
 
     useEffect(() => {
-        if (flash.success) {
-            setSuccessMessage(flash.success);
+        const showFlashMessages = (currentFlash) => {
+            if (currentFlash?.success) {
+                clearTimeout(successTimeout.current);
+                setSuccessMessage(currentFlash.success);
 
-            setTimeout(() => {
-                setSuccessMessage('');
-            }, 5000);
-        }
-        if (flash.error) {
-            setErrorMessage(flash.error);
-            setTimeout(() => {
-                setErrorMessage('');
-            }, 5000);
-        }
+                successTimeout.current = setTimeout(() => {
+                    setSuccessMessage('');
+                    successTimeout.current = null;
+                }, 5000);
+            }
 
+            if (currentFlash?.error) {
+                clearTimeout(errorTimeout.current);
+                setErrorMessage(currentFlash.error);
+
+                errorTimeout.current = setTimeout(() => {
+                    setErrorMessage('');
+                    errorTimeout.current = null;
+                }, 5000);
+            }
+        };
+        showFlashMessages(flash);
+
+        return () => {
+            clearTimeout(successTimeout.current);
+            clearTimeout(errorTimeout.current);
+        };
     }, [flash.success, flash.error]);
 
     const columns = columnHelper.columns([
         
         columnHelper.accessor("title", {
             header: "Title",
+            cell: (info) => {
+                    return (
+                        <div className={`max-w-sm `}>
+                            {info.getValue()}
+                        </div>
+                    );
+            }
         }),
         columnHelper.accessor("status", {
             header: "Status",
@@ -119,19 +142,18 @@ const Tasks = ({ auth, header, tasks, flash, query }) => {
                         </AlertDialogTrigger>
                         <AlertDialogContent className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg text-gray-900 dark:text-gray-100">
                             <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete this task.
-                            </AlertDialogDescription>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete this task.
+                                </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                            <AlertDialogCancel className="bg-gray-200 hover:bg-gray-300 text-gray-800 hover:text-gray-900 border border-gray-300 py-2 px-4 rounded focus:ring-blue-500">
-                                Cancel
-                            </AlertDialogCancel>
-                            <AlertDialogAction render={<DeleteForm routeName="tasks.destroy" routeParams={{ id: info.row.original.id }} handleSuccess={() => {}} handleError={() => {}}  className="space-y-6">
-                            </DeleteForm>}>
-                                
-                            </AlertDialogAction>
+                                <AlertDialogCancel className="bg-gray-200 hover:bg-gray-300 text-gray-800 hover:text-gray-900 border border-gray-300 py-2 px-4 rounded focus:ring-blue-500">
+                                    Cancel
+                                </AlertDialogCancel>
+                                <AlertDialogAction render={<DeleteForm routeName="tasks.destroy" routeParams={{ id: info.row.original.id }} handleSuccess={() => {router.visit(route('tasks.index'));}} handleError={() => {}}  className="space-y-6">
+                                </DeleteForm>}>
+                                </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
@@ -174,7 +196,6 @@ const Tasks = ({ auth, header, tasks, flash, query }) => {
         e.preventDefault();
         get(route('tasks.index', { 
             onSuccess: (page) => {
-                console.log(page)
                 setAllTasks(page.props.tasks.data);
             }
          }));
@@ -187,9 +208,9 @@ const Tasks = ({ auth, header, tasks, flash, query }) => {
         >
            
             <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 overflow-hidden ">
-                {allTasks.length > 0 || data?.query ? (
+                {allTasks.length > 0 || isFilterActive ? (
                     <div className="flex  content-between justify-between content-between mt-10 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900 dark:text-gray-100">Manage Tasks</div>
+                        <div className="flex items-center p-6 text-gray-900 dark:text-gray-100">Manage Tasks</div>
                         <div className="p-6 text-gray-900 dark:text-gray-100">
                             <Button className="rounded text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 uppercase border-transparent"  variant="outline" size="sm" render={<Link href="/tasks/create">+ Add Task</Link>} />
                         </div>
@@ -214,7 +235,7 @@ const Tasks = ({ auth, header, tasks, flash, query }) => {
                             <Button variant="link" className="text-muted-foreground" size="sm" nativeButton={false} render={<a href="#">Learn More <ArrowUpRightIcon /></a>} />
                         </Empty> )
                 }
-
+                {console.log("successMessage", successMessage)}
                 { successMessage && (
                     <div transition="linear" timing="ease-in-out" duration="5000" className="mt-5 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
                         <strong className="font-bold">Success! </strong>
@@ -228,7 +249,7 @@ const Tasks = ({ auth, header, tasks, flash, query }) => {
                     </div>
                 )}
 
-                {(allTasks.length > 0 || data?.query) && (
+                {(allTasks.length > 0 || isFilterActive) && (
                     <>
                         <div>
                             <div className="flex justify-content-end pt-4 w-full max-w-sm">
@@ -270,7 +291,7 @@ const Tasks = ({ auth, header, tasks, flash, query }) => {
                                             ))}
                                         </TableRow>
                                     ))}
-                                    {data?.query && allTasks.length === 0 && (
+                                    {isFilterActive && allTasks.length === 0 && (
                                         <TableRow>
                                             <TableCell colSpan={columns.length} className="text-center py-4 text-gray-500 dark:text-gray-400">
                                                 No tasks found.
@@ -281,8 +302,8 @@ const Tasks = ({ auth, header, tasks, flash, query }) => {
                             </Table>
                         </div>
                         <div className="flex items-center justify-end space-x-2 py-4 text-gray-900 dark:text-gray-100">
-                            {tasks.prev_page_url ? (
-                                <Button className="border rounded uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 hover:text-gray-900 dark:hover:text-gray  transition ease-in-out duration-150" variant="outline" size="sm" render={<Link href={tasks.prev_page_url + (data?.query ? '&query=' + data.query : '')}>Previous</Link>}   >
+                            {tasks.prev_page_url  ? (
+                                <Button className="border rounded uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 hover:text-gray-900 dark:hover:text-gray  transition ease-in-out duration-150" variant="outline" size="sm" render={<Link href={tasks.prev_page_url }>Previous</Link>}   >
                                 </Button>
                             ) : ( <Button className="border rounded uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 hover:text-gray-900 dark:hover:text-gray  transition ease-in-out duration-150" variant="outline" size="sm" disabled   >
                                     Previous
@@ -290,7 +311,7 @@ const Tasks = ({ auth, header, tasks, flash, query }) => {
                             )}
 
                             {tasks.next_page_url ? (
-                                    <Button className="border rounded uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 hover:text-gray-900 dark:hover:text-gray  transition ease-in-out duration-150" variant="outline" size="sm" render={<Link href={tasks.next_page_url + (data?.query ? '&query=' + data.query : '')} disabled={!tasks.next_page_url}>Next</Link>} >
+                                    <Button className="border rounded uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 hover:text-gray-900 dark:hover:text-gray  transition ease-in-out duration-150" variant="outline" size="sm" render={<Link href={tasks.next_page_url } >Next</Link>} >
                                     </Button>
                             ) : ( <Button className="border rounded uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 hover:text-gray-900 dark:hover:text-gray  transition ease-in-out duration-150" variant="outline" size="sm" disabled>
                                     Next
