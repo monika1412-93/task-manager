@@ -4,17 +4,25 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreTaskRequest;
 use App\Models\Task;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TaskController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $tasks = auth()->user()->tasks()->get();
+    public function index(Request $request)
+    {   
+        $query = $request->validate(['query' => ['nullable', 'string', 'max:255']])['query'] ?? null;
+        $tasks = auth()->user()->tasks();
+        if($query !== null && $query !== '') {
+            $tasks = $tasks->where('title', 'like', "%{$query}%")->orWhere('description', 'like', "%{$query}%")->orWhere('status', 'like', "%{$query}%");
+        }
+        $tasks = $tasks->orderBy('created_at', 'desc')->paginate(5)->withQueryString();
+
         return inertia('Tasks/Tasks', [
             'tasks' => $tasks,
+            'query' => $query,
         ]);
     }
 
@@ -23,7 +31,6 @@ class TaskController extends Controller
      */
     public function create()
     {
-        //
 
         return inertia('Tasks/Create');
     }

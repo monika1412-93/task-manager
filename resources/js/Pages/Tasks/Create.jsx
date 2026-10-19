@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { format } from "date-fns"
 
@@ -112,7 +112,7 @@ export default function Create({ auth, header, task }) {
                 <div className="mb-10 flex content-between justify-between content-between mt-10 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <div className="p-6 text-gray-900 dark:text-gray-100">{task ? 'Edit Task' : 'Create A New Task'}</div>
                     <div className="p-6 text-gray-900 dark:text-gray-100">
-                         <Link href="/tasks" className="text-blue-500 hover:text-blue-700">back to tasks</Link>
+                         <Link href="/tasks" className="text-blue-500 hover:text-blue-700">&larr; Back to Tasks</Link>
                     </div>
                 </div>
                 <Card className="p-6 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg ">
@@ -178,8 +178,8 @@ export default function Create({ auth, header, task }) {
                                     </Field> 
                                 </FieldSet>
                                 <Field orientation="horizontal">
-                                    <Button variant="outline" type="submit">Submit</Button>
-                                    <Button  type="button" onClick={() => {reset(); setClientErrors({}); setDate(undefined); }} className="ml-2">
+                                    <Button className="inline-flex items-center px-4 py-2 bg-gray-800 dark:bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-white dark:text-gray-800 uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150" variant="outline" type="submit">Submit</Button>
+                                    <Button  type="button" onClick={() => {reset(); setClientErrors({}); setDate(undefined); }} className="ml-2 border uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 hover:text-gray-900 dark:hover:text-gray  transition ease-in-out duration-150" variant="outline">
                                         Reset
                                     </Button>
                                 </Field>

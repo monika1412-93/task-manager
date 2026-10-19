@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { Link } from '@inertiajs/react';
 
 const Show = ({ auth, header, task }) => {
 
@@ -13,9 +14,9 @@ const Show = ({ auth, header, task }) => {
                <div className="flex content-between justify-between content-between mt-10 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <div className="p-6 text-gray-900 dark:text-gray-100">{task.title}</div>
                     <div className="p-6 text-gray-900 dark:text-gray-100">
-                        <a href="/tasks" className="text-blue-500 hover:text-blue-700">
+                        <Link href="/tasks" className="text-blue-500 hover:text-blue-700">
                             &larr; Back to Tasks
-                        </a>
+                        </Link>
                     </div>
                 </div>
                 <div className="text-gray-900 dark:text-gray-100 p-3 content-between justify-between content-between mt-10 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
