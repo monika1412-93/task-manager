@@ -49,7 +49,11 @@ class TaskController extends Controller
      */
     public function show(int $id)
     {
-        $task = auth()->user()->tasks()->findOrFail($id);
+        $task = auth()->user()->tasks()->find($id);
+        if(!$task){
+            abort(403, 'Unauthorized action.');
+            return redirect()->route('tasks.index')->with('error', 'Task Not Found.');
+        }
         return inertia('Tasks/Show', [
             'task' => $task,
         ]);
@@ -60,7 +64,10 @@ class TaskController extends Controller
      */
     public function edit(int $id)
     {
-        $task = auth()->user()->tasks()->findOrFail($id);
+        $task = auth()->user()->tasks()->find($id);
+        if(!$task){
+            abort(403, 'Unauthorized action.');
+        }
         return inertia('Tasks/Create', [
             'task' => $task,
         ]);
@@ -71,7 +78,10 @@ class TaskController extends Controller
      */
     public function update(StoreTaskRequest $request, int $id)
     {
-        $task = auth()->user()->tasks()->findOrFail($id);
+        $task = auth()->user()->tasks()->find($id);
+        if(!$task){
+            abort(403, 'Unauthorized action.');
+        }
         $task->update($request->validated());
         return redirect()->route('tasks.index')->with('success', 'Task updated successfully.');
     }
@@ -81,7 +91,10 @@ class TaskController extends Controller
      */
     public function destroy(string $id)
     {
-        $task = auth()->user()->tasks()->findOrFail($id);
+        $task = auth()->user()->tasks()->find($id);
+        if(!$task){
+            abort(403, 'Unauthorized action.');
+        }
         $task->delete();
         return redirect()->route('tasks.index')->with('success', 'Task deleted successfully.');
     }
